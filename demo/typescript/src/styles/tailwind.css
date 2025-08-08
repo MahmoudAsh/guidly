@@ -1,5 +1,8 @@
 @import 'tailwindcss';
 
+/* Use class-based dark mode (Tailwind v4) with classic ancestor selector */
+@custom-variant dark (.dark &);
+
 @theme {
   --font-sans: Inter, sans-serif;
   --font-sans--font-feature-settings: 'cv11';

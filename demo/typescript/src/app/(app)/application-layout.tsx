@@ -77,13 +77,11 @@ export function ApplicationLayout({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     setHasMounted(true)
     try {
-      const stored = typeof window !== 'undefined' ? localStorage.getItem('theme') : null
-      const prefersDark = typeof window !== 'undefined' && window.matchMedia
-        ? window.matchMedia('(prefers-color-scheme: dark)').matches
-        : false
-      const enableDark = stored ? stored === 'dark' : prefersDark
-      document.documentElement.classList.toggle('dark', enableDark)
-      setIsDark(enableDark)
+      const stored = localStorage.getItem('theme')
+      const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+      const isDark = stored ? stored === 'dark' : prefersDark
+      document.documentElement.classList.toggle('dark', isDark)
+      setIsDark(isDark)
     } catch {
       // no-op
     }
@@ -92,7 +90,9 @@ export function ApplicationLayout({ children }: { children: React.ReactNode }) {
   function handleToggleDarkMode(next: boolean) {
     setIsDark(next)
     try {
-      document.documentElement.classList.toggle('dark', next)
+      const root = document.documentElement
+      root.classList.remove('dark')
+      if (next) root.classList.add('dark')
       localStorage.setItem('theme', next ? 'dark' : 'light')
     } catch {
       // no-op
