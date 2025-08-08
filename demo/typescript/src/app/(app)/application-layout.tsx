@@ -10,6 +10,7 @@ import {
   DropdownMenu,
 } from '@/components/dropdown'
 import { Navbar, NavbarItem, NavbarSection, NavbarSpacer } from '@/components/navbar'
+import { Switch } from '@/components/switch'
 import {
   Sidebar,
   SidebarBody,
@@ -22,7 +23,6 @@ import {
   SidebarSpacer,
 } from '@/components/sidebar'
 import { SidebarLayout } from '@/components/sidebar-layout'
-import { getEvents } from '@/data'
 import {
   ArrowRightStartOnRectangleIcon,
   ChevronDownIcon,
@@ -37,11 +37,12 @@ import {
   Cog6ToothIcon,
   HomeIcon,
   QuestionMarkCircleIcon,
-  SparklesIcon,
   Square2StackIcon,
-  TicketIcon,
+  BookmarkIcon,
+  MoonIcon,
 } from '@heroicons/react/20/solid'
 import { usePathname } from 'next/navigation'
+import { useEffect, useState } from 'react'
 
 function AccountDropdownMenu({ anchor }: { anchor: 'top start' | 'bottom end' }) {
   return (
@@ -68,14 +69,35 @@ function AccountDropdownMenu({ anchor }: { anchor: 'top start' | 'bottom end' })
   )
 }
 
-export function ApplicationLayout({
-  events,
-  children,
-}: {
-  events: Awaited<ReturnType<typeof getEvents>>
-  children: React.ReactNode
-}) {
+export function ApplicationLayout({ children }: { children: React.ReactNode }) {
   let pathname = usePathname()
+  const [isDark, setIsDark] = useState(false)
+  const [hasMounted, setHasMounted] = useState(false)
+
+  useEffect(() => {
+    setHasMounted(true)
+    try {
+      const stored = typeof window !== 'undefined' ? localStorage.getItem('theme') : null
+      const prefersDark = typeof window !== 'undefined' && window.matchMedia
+        ? window.matchMedia('(prefers-color-scheme: dark)').matches
+        : false
+      const enableDark = stored ? stored === 'dark' : prefersDark
+      document.documentElement.classList.toggle('dark', enableDark)
+      setIsDark(enableDark)
+    } catch {
+      // no-op
+    }
+  }, [])
+
+  function handleToggleDarkMode(next: boolean) {
+    setIsDark(next)
+    try {
+      document.documentElement.classList.toggle('dark', next)
+      localStorage.setItem('theme', next ? 'dark' : 'light')
+    } catch {
+      // no-op
+    }
+  }
 
   return (
     <SidebarLayout
@@ -130,40 +152,38 @@ export function ApplicationLayout({
                 <HomeIcon />
                 <SidebarLabel>Home</SidebarLabel>
               </SidebarItem>
-              <SidebarItem href="/events" current={pathname.startsWith('/events')}>
+              <SidebarItem href="/feed" current={pathname.startsWith('/feed')}>
                 <Square2StackIcon />
-                <SidebarLabel>Events</SidebarLabel>
+                <SidebarLabel>Feed</SidebarLabel>
               </SidebarItem>
-              <SidebarItem href="/orders" current={pathname.startsWith('/orders')}>
-                <TicketIcon />
-                <SidebarLabel>Orders</SidebarLabel>
-              </SidebarItem>
-              <SidebarItem href="/settings" current={pathname.startsWith('/settings')}>
-                <Cog6ToothIcon />
-                <SidebarLabel>Settings</SidebarLabel>
+              <SidebarItem href="/saved" current={pathname.startsWith('/saved')}>
+                <BookmarkIcon />
+                <SidebarLabel>Saved</SidebarLabel>
               </SidebarItem>
             </SidebarSection>
 
-            <SidebarSection className="max-lg:hidden">
-              <SidebarHeading>Upcoming Events</SidebarHeading>
-              {events.map((event) => (
-                <SidebarItem key={event.id} href={event.url}>
-                  {event.name}
-                </SidebarItem>
-              ))}
-            </SidebarSection>
+            {/* Upcoming Events section removed */}
 
             <SidebarSpacer />
 
             <SidebarSection>
+              <SidebarItem href="/settings" current={pathname.startsWith('/settings')}>
+                <Cog6ToothIcon />
+                <SidebarLabel>Settings</SidebarLabel>
+              </SidebarItem>
               <SidebarItem href="#">
                 <QuestionMarkCircleIcon />
                 <SidebarLabel>Support</SidebarLabel>
               </SidebarItem>
-              <SidebarItem href="#">
-                <SparklesIcon />
-                <SidebarLabel>Changelog</SidebarLabel>
-              </SidebarItem>
+              {hasMounted && (
+                <SidebarItem>
+                  <MoonIcon />
+                  <SidebarLabel>Dark mode</SidebarLabel>
+                  <span className="ml-auto">
+                    <Switch checked={isDark} onChange={handleToggleDarkMode} />
+                  </span>
+                </SidebarItem>
+              )}
             </SidebarSection>
           </SidebarBody>
 
