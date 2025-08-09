@@ -1,87 +1,36 @@
 import { NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
 
 type Article = {
   id: string
   title: string
   url: string
   summary: string
-  source: 'Medium' | 'Reddit' | 'NN/g' | string
+  source: string
   tags?: string[]
   date: string // ISO date
   image?: string
 }
 
-function daysAgoIso(days: number): string {
-  const d = new Date()
-  d.setDate(d.getDate() - days)
-  return d.toISOString().slice(0, 10)
-}
+import { createClient } from '@supabase/supabase-js'
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null
 
-function sampleArticles(): Article[] {
-  return [
-    {
-      id: 'm-1',
-      title: '5 UI Tips for Better Onboarding',
-      url: 'https://medium.com/@design/5-ui-tips-for-better-onboarding',
-      summary: 'Key principles, patterns, and examples for reducing friction during user onboarding in modern products.',
-      source: 'Medium',
-      tags: ['UI', 'Onboarding'],
-      date: daysAgoIso(1),
-      image: 'https://picsum.photos/seed/m-1/640/360',
-    },
-    {
-      id: 'r-1',
-      title: 'What are underrated UX research methods?',
-      url: 'https://www.reddit.com/r/userexperience/',
-      summary: 'A community discussion on overlooked, practical research techniques you can apply on a tight budget and timeline.',
-      source: 'Reddit',
-      tags: ['Research', 'Practical'],
-      date: daysAgoIso(2),
-      image: 'https://picsum.photos/seed/r-1/640/360',
-    },
-    {
-      id: 'nng-1',
-      title: 'UX Heuristics Revisited for AI Products',
-      url: 'https://www.nngroup.com/articles/',
-      summary: 'How classic usability heuristics translate to AI-driven interfaces and what needs rethinking in 2025.',
-      source: 'NN/g',
-      tags: ['Heuristics', 'AI'],
-      date: daysAgoIso(3),
-      image: 'https://picsum.photos/seed/nng-1/640/360',
-    },
-    {
-      id: 'm-2',
-      title: 'Design Tokens at Scale: A Practical Guide',
-      url: 'https://medium.com/@design/design-tokens-at-scale',
-      summary: 'A hands-on approach to setting up, naming, and governing design tokens across multiple platforms and brands.',
-      source: 'Medium',
-      tags: ['Design Systems', 'Tokens'],
-      date: daysAgoIso(4),
-      image: 'https://picsum.photos/seed/m-2/640/360',
-    },
-    {
-      id: 'r-2',
-      title: 'Show HN: I built a color contrast checker with real content previews',
-      url: 'https://www.reddit.com/r/design/',
-      summary: 'A maker post sharing a new accessibility tool with discussion on practical contrast testing workflows.',
-      source: 'Reddit',
-      tags: ['Accessibility', 'Tools'],
-      date: daysAgoIso(5),
-      image: 'https://picsum.photos/seed/r-2/640/360',
-    },
-    {
-      id: 'nng-2',
-      title: 'Information Architecture for Complex SaaS',
-      url: 'https://www.nngroup.com/articles/',
-      summary: 'Patterns, pitfalls, and recommendations for structuring navigation and content in enterprise SaaS products.',
-      source: 'NN/g',
-      tags: ['IA', 'SaaS'],
-      date: daysAgoIso(6),
-      image: 'https://picsum.photos/seed/nng-2/640/360',
-    },
-  ]
+function mapDbToApi(a: any): Article {
+  const dt = a.publishedAt ?? a.createdAt ?? null
+  const dateIso = dt ? new Date(dt).toISOString() : new Date().toISOString()
+  return {
+    id: String(a.id),
+    title: a.title,
+    url: a.url,
+    summary: a.summary ?? '',
+    source: a.source,
+    tags: Array.isArray(a.tags) ? a.tags : [],
+    date: dateIso,
+  }
 }
 
 export async function GET(request: Request) {
@@ -90,21 +39,38 @@ export async function GET(request: Request) {
   const limitParam = searchParams.get('limit')
   const limit = limitParam ? Math.max(1, Math.min(100, parseInt(limitParam, 10) || 20)) : 20
 
-  // For now, return a shuffled sample. Later, replace with RSS-backed data.
-  const items = sampleArticles()
+  try {
+    if (byId) {
+      const idNum = parseInt(byId, 10)
+      if (!Number.isFinite(idNum)) {
+        return NextResponse.json({ error: 'Invalid id' }, { status: 400 })
+      }
+      if (!supabase) return NextResponse.json({ error: 'Server not configured' }, { status: 500 })
+      const { data, error } = await supabase
+        .from('Article')
+        .select('id,title,url,source,summary,tags,publishedAt,createdAt')
+        .eq('id', idNum)
+        .maybeSingle()
+      if (error) throw error
+      if (!data) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+      const mapped = mapDbToApi(data)
+      return NextResponse.json(mapped, { status: 200 })
+    }
 
-  if (byId) {
-    const found = items.find((a) => a.id === byId)
-    if (!found) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-    return NextResponse.json(found, { status: 200 })
+    if (!supabase) return NextResponse.json({ error: 'Server not configured' }, { status: 500 })
+    const { data, error } = await supabase
+      .from('Article')
+      .select('id,title,url,source,summary,tags,publishedAt,createdAt')
+      .order('publishedAt', { ascending: false, nullsFirst: false })
+      .order('createdAt', { ascending: false })
+      .limit(limit)
+    if (error) throw error
+    const mapped = (data ?? []).map(mapDbToApi)
+    return NextResponse.json(mapped, { status: 200 })
+  } catch (e) {
+    console.error('[api/feed] Error', e)
+    return NextResponse.json({ error: 'Internal error' }, { status: 500 })
   }
-  const shuffled = items
-    .map((a) => ({ a, r: Math.random() }))
-    .sort((x, y) => x.r - y.r)
-    .map(({ a }) => a)
-    .slice(0, limit)
-
-  return NextResponse.json(shuffled, { status: 200 })
 }
 
 

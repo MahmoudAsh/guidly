@@ -3,6 +3,9 @@ import { Text } from '@/components/text'
 import { headers } from 'next/headers'
 import { ArticleActions } from '@/components/article-actions'
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 type Article = {
   id: string
   title: string

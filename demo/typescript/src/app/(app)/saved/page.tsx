@@ -3,6 +3,9 @@ import { Heading, Subheading } from '@/components/heading'
 import { ArticleCard, type Article } from '@/components/article-card'
 import { useEffect, useState } from 'react'
 import { listSaved, removeArticle } from '@/lib/saved'
+
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 // Note: client components cannot export metadata. Title is handled via parent layout.
 
 export default function SavedPage() {

@@ -1,3 +1,5 @@
+"use client"
+export const dynamic = 'force-dynamic'
 import { Logo } from '@/app/logo'
 import { Button } from '@/components/button'
 import { Checkbox, CheckboxField } from '@/components/checkbox'
@@ -5,45 +7,44 @@ import { Field, Label } from '@/components/fieldset'
 import { Heading } from '@/components/heading'
 import { Input } from '@/components/input'
 import { Strong, Text, TextLink } from '@/components/text'
-import type { Metadata } from 'next'
+import { Suspense, useEffect, useState } from 'react'
+import { LoginForm } from '@/components/auth/LoginForm'
 
-export const metadata: Metadata = {
-  title: 'Login',
-}
+export default function LoginPage() {
+  const [redirectTo, setRedirectTo] = useState<string | undefined>(undefined)
+  const [registered, setRegistered] = useState(false)
+  const [dismissed, setDismissed] = useState(false)
 
-export default function Login() {
+  useEffect(() => {
+    try {
+      const sp = new URLSearchParams(window.location.search)
+      setRedirectTo(sp.get('redirect') || sp.get('next') || undefined)
+      setRegistered(sp.get('registered') === '1')
+    } catch {}
+  }, [])
+
   return (
-    <form action="" method="POST" className="grid w-full max-w-sm grid-cols-1 gap-8">
+    <>
+      <Suspense fallback={null}>
+        <div />
+      </Suspense>
+    <div className="grid w-full max-w-sm grid-cols-1 gap-8">
       <Logo className="h-6 text-zinc-950 dark:text-white forced-colors:text-[CanvasText]" />
       <Heading>Sign in to your account</Heading>
-      <Field>
-        <Label>Email</Label>
-        <Input type="email" name="email" />
-      </Field>
-      <Field>
-        <Label>Password</Label>
-        <Input type="password" name="password" />
-      </Field>
-      <div className="flex items-center justify-between">
-        <CheckboxField>
-          <Checkbox name="remember" />
-          <Label>Remember me</Label>
-        </CheckboxField>
-        <Text>
-          <TextLink href="/forgot-password">
-            <Strong>Forgot password?</Strong>
-          </TextLink>
-        </Text>
-      </div>
-      <Button type="submit" className="w-full">
-        Login
-      </Button>
+      {registered && !dismissed && (
+        <div className="rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700 dark:border-green-500/30 dark:bg-green-950/20 dark:text-green-300">
+          Account created. Please sign in.
+          <button className="ml-2 text-xs underline" onClick={() => setDismissed(true)}>Dismiss</button>
+        </div>
+      )}
+      <LoginForm redirectTo={redirectTo} />
       <Text>
         Don’t have an account?{' '}
         <TextLink href="/register">
           <Strong>Sign up</Strong>
         </TextLink>
       </Text>
-    </form>
+    </div>
+    </>
   )
 }

@@ -30,10 +30,8 @@ export function ArticleActions({ article }: { article: Article }) {
 
   return (
     <div className="flex flex-wrap gap-3">
-      <Button asChild>
-        <a href={article.url} target="_blank" rel="noreferrer">
-          Read full article
-        </a>
+      <Button href={article.url} target="_blank" rel="noreferrer">
+        Read full article
       </Button>
       <Button plain onClick={handleToggleSave} aria-pressed={isSaved}>
         <span className="inline-flex items-center gap-2">

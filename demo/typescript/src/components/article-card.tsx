@@ -82,17 +82,7 @@ export function ArticleCard({ article, className }: { article: Article; classNam
         </div>
 
         <p
-          className={clsx(
-            'mt-2 text-zinc-600 dark:text-zinc-300',
-            'line-clamp-3'
-          )}
-          style={{
-            // Fallback clamp if utility not available
-            display: 'webkitBox' as unknown as string,
-            WebkitLineClamp: 3 as unknown as number,
-            WebkitBoxOrient: 'vertical' as unknown as string,
-            overflow: 'hidden',
-          }}
+          className={clsx('mt-2 text-zinc-600 dark:text-zinc-300', 'line-clamp-3')}
         >
           {article.summary}
         </p>

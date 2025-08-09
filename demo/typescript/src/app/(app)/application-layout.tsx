@@ -43,6 +43,7 @@ import {
 } from '@heroicons/react/20/solid'
 import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import { getSupabaseBrowser } from '@/lib/supabase/client'
 
 function AccountDropdownMenu({ anchor }: { anchor: 'top start' | 'bottom end' }) {
   return (
@@ -73,6 +74,8 @@ export function ApplicationLayout({ children }: { children: React.ReactNode }) {
   let pathname = usePathname()
   const [isDark, setIsDark] = useState(false)
   const [hasMounted, setHasMounted] = useState(false)
+  const [userName, setUserName] = useState<string>('')
+  const [userEmail, setUserEmail] = useState<string>('')
 
   useEffect(() => {
     setHasMounted(true)
@@ -85,6 +88,29 @@ export function ApplicationLayout({ children }: { children: React.ReactNode }) {
     } catch {
       // no-op
     }
+    // Load user for sidebar
+    const supabase = getSupabaseBrowser()
+    supabase.auth.getUser().then(({ data }) => {
+      const u = data.user
+      if (u) {
+        const meta = (u.user_metadata as any) || {}
+        setUserName((meta.display_name as string) || (meta.name as string) || '')
+        setUserEmail(u.email || '')
+      }
+    })
+    const onProfile = () => {
+      const supa = getSupabaseBrowser()
+      supa.auth.getUser().then(({ data }) => {
+        const u = data.user
+        if (u) {
+          const meta = (u.user_metadata as any) || {}
+          setUserName((meta.display_name as string) || (meta.name as string) || '')
+          setUserEmail(u.email || '')
+        }
+      })
+    }
+    window.addEventListener('profile-updated', onProfile)
+    return () => window.removeEventListener('profile-updated', onProfile)
   }, [])
 
   function handleToggleDarkMode(next: boolean) {
@@ -98,6 +124,8 @@ export function ApplicationLayout({ children }: { children: React.ReactNode }) {
       // no-op
     }
   }
+
+  // Always render the structural shell on the server. Client-only bits below are already guarded.
 
   return (
     <SidebarLayout
@@ -191,11 +219,11 @@ export function ApplicationLayout({ children }: { children: React.ReactNode }) {
             <Dropdown>
               <DropdownButton as={SidebarItem}>
                 <span className="flex min-w-0 items-center gap-3">
-                  <Avatar src="/users/erica.jpg" className="size-10" square alt="" />
+                  <Avatar initials={(userName || userEmail || 'U?').slice(0,1).toUpperCase() + ((userName.split(' ')[1]?.[0]||'').toUpperCase())} className="size-10" square alt={userName || userEmail} />
                   <span className="min-w-0">
-                    <span className="block truncate text-sm/5 font-medium text-zinc-950 dark:text-white">Erica</span>
+                    <span className="block truncate text-sm/5 font-medium text-zinc-950 dark:text-white">{userName || 'Your name'}</span>
                     <span className="block truncate text-xs/5 font-normal text-zinc-500 dark:text-zinc-400">
-                      erica@example.com
+                      {userEmail || 'you@example.com'}
                     </span>
                   </span>
                 </span>

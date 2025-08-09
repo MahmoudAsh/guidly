@@ -7,8 +7,12 @@ import { Input } from '@/components/input'
 import { Select } from '@/components/select'
 import { Text } from '@/components/text'
 import { Textarea } from '@/components/textarea'
+import { AccountForm } from '@/components/settings/AccountForm'
 import type { Metadata } from 'next'
 import { Address } from './address'
+
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 export const metadata: Metadata = {
   title: 'Settings',
@@ -20,15 +24,7 @@ export default function Settings() {
       <Heading>Settings</Heading>
       <Divider className="my-10 mt-6" />
 
-      <section className="grid gap-x-8 gap-y-6 sm:grid-cols-2">
-        <div className="space-y-1">
-          <Subheading>Organization Name</Subheading>
-          <Text>This will be displayed on your public profile.</Text>
-        </div>
-        <div>
-          <Input aria-label="Organization Name" name="name" defaultValue="Catalyst" />
-        </div>
-      </section>
+      <AccountForm />
 
       <Divider className="my-10" soft />
 

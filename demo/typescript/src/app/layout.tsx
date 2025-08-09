@@ -2,6 +2,9 @@ import '@/styles/tailwind.css'
 import type { Metadata } from 'next'
 import Script from 'next/script'
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export const metadata: Metadata = {
   title: {
     template: '%s - Catalyst',
